@@ -5,6 +5,7 @@ import androidx.annotation.VisibleForTesting
 import java.math.BigInteger
 import java.security.MessageDigest
 import java.security.SecureRandom
+import java.util.*
 
 class User private constructor(
     private val firstName: String,
@@ -17,7 +18,7 @@ class User private constructor(
     private val fullName: String
         get() = listOfNotNull(firstName, lastName)
             .joinToString(" ")
-            .capitalize()
+            .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
     private val initials: String
         get() = listOfNotNull(firstName, lastName)
             .map { it.first().uppercaseChar() }
@@ -30,7 +31,7 @@ class User private constructor(
     private var _login: String? = null
     internal var login: String
         set(value) {
-            _login = value?.toLowerCase()
+            _login = value.lowercase()
         }
         get() = _login!!
 
@@ -93,6 +94,15 @@ class User private constructor(
     fun changePassword(oldPass: String, newPass: String) {
         if (checkPassword(oldPass)) passwordHash = encrypt(newPass)
         else throw IllegalArgumentException("THe entered password does not match the current password")
+    }
+
+    @SuppressLint("RestrictedApi")
+    fun changeAccessCode(login:String){
+        if (login==_login!!){
+            val code = generateAccessCode()
+            passwordHash = encrypt(code)
+            accessCode = code
+        }
     }
 
     private fun encrypt(password: String): String = salt.plus(password).md5()
